@@ -4,12 +4,12 @@ import dateutil.parser
 from flask import Flask, abort, json, jsonify, make_response, render_template, Response, request, send_from_directory
 import hashlib
 
-import pprint
-
 
 # Default configuration
 DEBUG = False
 
+
+# Define greetings for different times of the day in different languages.
 GREETINGS = { 
     'english':      ('Good morning', 'Hello', 'Good evening'), 
     'french':       ('Bonjour', 'Bonjour', 'Bonsoir'), 
@@ -19,6 +19,7 @@ GREETINGS = {
     'italian':      ('Buongiorno', 'Ciao', 'Buonasera'), 
     'swedish':      ('God morgon', 'Hallå', 'God kväll'),
 }
+
 
 app = Flask(__name__, static_url_path='')
 app.config.from_object(__name__)
@@ -146,7 +147,6 @@ def edition():
 #
 @app.route('/validate_config/', methods=['POST'])
 def validate_config():
-    pprint.pprint(request.form)
     if 'config' not in request.form:
         return Response(response='There is no config to validate', status=400)
     
