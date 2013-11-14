@@ -1,6 +1,7 @@
 # coding: utf-8
 from datetime import datetime
-from flask import Flask, make_response, render_template, Response, request, send_from_directory
+import dateutil.parser
+from flask import Flask, abort, make_response, render_template, Response, request, send_from_directory
 import hashlib
 
 
@@ -60,6 +61,77 @@ def sample():
     )
     return response
 
+
+# Prepares and returns an edition of the publication.
+#
+# == Parameters:
+# lang
+#   The language for the greeting.
+#   The subscriber will have picked this from the values defined in meta.json.
+# name
+#   The name of the person to greet.
+#   The subscriber will have entered their name at the subscribe stage.
+# local_delivery_time
+#   The local time where the subscribed bot is.
+#
+# == Returns:
+# HTML/CSS edition with ETag.
+# 
+@app.route('/edition/')
+def edition():
+    # Extract configuration provided by user through BERG Cloud.
+    # These options are defined in meta.json.
+    language = request.args.get('lang', '')
+    name = request.args.get('name', '')
+
+    if language == '' or language not in GREETINGS:
+        return Response(
+            response='Error: Invalid or missing lang parameter', status=400)
+    
+    if name == '':
+        return Response(response='Error: No name provided', status=400)
+
+    try:
+        # local_delivery_time is like '2013-10-16T23:20:30-08:00'.
+        date = dateutil.parser.parse(request.args['local_delivery_time'])
+    except:
+        return Response(
+                    response='Error: Invalid or missing local_delivery_time',
+                    status=400)
+
+    # The publication is only delivered on Mondays, so if it's not a Monday in
+    # the subscriber's timezone, we return nothing but a 204 status.
+    if date.weekday() != 0:
+        return Response(response=None, status=204)
+
+    i = 1
+    if date.hour >= 0 and date.hour <= 3:
+        i = 2
+    if date.hour >= 4 and date.hour <= 11:
+        i = 0
+    elif date.hour >= 12 and date.hour <= 17:
+        i = 1
+    elif date.hour >= 18 and date.hour <= 23:
+        i = 2
+
+    # Base the ETag on the unique content: language, name and time/date.
+    # This means the user will not get the same content twice.
+    # But, if they reset their subscription (with, say, a different language)
+    # they will get new content.
+    response = make_response(render_template(
+                    'edition.html',
+                    greeting="%s, %s" % (GREETINGS[language][i], name)
+                ))
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    response.headers['ETag'] = '"%s"' % (
+            hashlib.md5(
+                language + name + date.strftime('%H%d%m%Y')
+            ).hexdigest()
+        )
+    return response
+
+
 if __name__ == '__main__':
     app.debug = app.config['DEBUG']
     app.run()
+
