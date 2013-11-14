@@ -146,8 +146,8 @@ def edition():
 #
 @app.route('/validate_config/', methods=['POST'])
 def validate_config():
-    pprint.pprint(request.args)
-    if 'config' not in request.args:
+    pprint.pprint(request.form)
+    if 'config' not in request.form:
         return Response(response='There is no config to validate', status=400)
     
     # Preparing what will be returned:
@@ -158,7 +158,7 @@ def validate_config():
 
     # Extract the config from the POST data and parse its JSON contents.
     # user_settings will be something like: {"name":"Alice", "lang":"english"}.
-    user_settings = json.loads(request.args.get('config', {}))
+    user_settings = json.loads(request.form.get('config', {}))
 
     # If the user did not choose a language:
     if 'lang' not in user_settings or user_settings['lang'] == '':
