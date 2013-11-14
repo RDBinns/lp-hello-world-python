@@ -1,7 +1,7 @@
 # coding: utf-8
 from datetime import datetime
 import dateutil.parser
-from flask import Flask, abort, make_response, render_template, Response, request, send_from_directory
+from flask import Flask, abort, json, jsonify, make_response, render_template, Response, request, send_from_directory
 import hashlib
 
 
@@ -129,6 +129,51 @@ def edition():
             ).hexdigest()
         )
     return response
+
+
+# == Parameters:
+# :config
+#   params[:config] contains a JSON array of responses to the options defined
+#   by the fields object in meta.json. In this case, something like:
+#   params[:config] = ["name":"SomeName", "lang":"SomeLanguage"]
+#
+# == Returns:
+# A JSON response object.
+# If the parameters passed in are valid: {"valid":true}
+# If the parameters passed in are not valid: {"valid":false,"errors":["No name was provided"], ["The language you chose does not exist"]}
+#
+@app.route('/validate_config/', methods=['POST'])
+def validate_config():
+    if 'config' not in request.args:
+        return Response(response='There is no config to validate', status=400)
+    
+    # Preparing what will be returned:
+    response = {
+        'errors': [],
+        'valid': True,
+    }
+
+    # Extract the config from the POST data and parse its JSON contents.
+    # user_settings will be something like: {"name":"Alice", "lang":"english"}.
+    user_settings = json.loads(request.args.get('config', {}))
+
+    # If the user did not choose a language:
+    if 'lang' not in user_settings or user_settings['lang'] == '':
+        response['valid'] = False
+        response['errors'].append('Please choose a language from the menu.')
+
+    # If the user did not fill in the name option:
+    if 'name' not in user_settings or user_settings['name'] == '':
+        response['valid'] = False
+        response['errors'].append('Please enter your name into the name box.')
+
+    if user_settings['lang'].lower() not in GREETINGS:
+        # Given that the select field is populated from a list of languages
+        # we defined this should never happen. Just in case.
+        response['valid'] = False
+        response['errors'].append("We couldn't find the language you selected (%s). Please choose another." % user_settings['lang'])
+
+    return jsonify(**response)
 
 
 if __name__ == '__main__':
