@@ -144,6 +144,7 @@ def edition():
 #
 @app.route('/validate_config/', methods=['POST'])
 def validate_config():
+    print request.args
     if 'config' not in request.args:
         return Response(response='There is no config to validate', status=400)
     
