@@ -4,6 +4,8 @@ import dateutil.parser
 from flask import Flask, abort, json, jsonify, make_response, render_template, Response, request, send_from_directory
 import hashlib
 
+import pprint
+
 
 # Default configuration
 DEBUG = False
@@ -144,7 +146,7 @@ def edition():
 #
 @app.route('/validate_config/', methods=['POST'])
 def validate_config():
-    print request.args
+    pprint.pprint(request.args)
     if 'config' not in request.args:
         return Response(response='There is no config to validate', status=400)
     
