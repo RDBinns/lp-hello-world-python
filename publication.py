@@ -134,7 +134,7 @@ def edition():
     return response
 
 
-# == Parameters:
+# == POST parameters:
 # :config
 #   params[:config] contains a JSON array of responses to the options defined
 #   by the fields object in meta.json. In this case, something like:
