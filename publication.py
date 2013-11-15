@@ -52,9 +52,9 @@ def sample():
     language = 'english'
     name = 'Little Printer'
     response = make_response(render_template(
-                        'edition.html',
-                        greeting="%s, %s" % (GREETINGS[language][0], name),
-                    ))
+            'edition.html',
+            greeting="%s, %s" % (app.config['GREETINGS'][language][0], name),
+        ))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     # Set the ETag to match the content.
     response.headers['ETag'] = '"%s"' % (
@@ -87,7 +87,7 @@ def edition():
     language = request.args.get('lang', '')
     name = request.args.get('name', '')
 
-    if language == '' or language not in GREETINGS:
+    if language == '' or language not in app.config['GREETINGS']:
         return Response(
             response='Error: Invalid or missing lang parameter', status=400)
     
@@ -122,9 +122,9 @@ def edition():
     # But, if they reset their subscription (with, say, a different language)
     # they will get new content.
     response = make_response(render_template(
-                    'edition.html',
-                    greeting="%s, %s" % (GREETINGS[language][i], name)
-                ))
+                'edition.html',
+                greeting="%s, %s" % (app.config['GREETINGS'][language][i], name)
+            ))
     response.headers['Content-Type'] = 'text/html; charset=utf-8'
     response.headers['ETag'] = '"%s"' % (
             hashlib.md5(
@@ -170,7 +170,7 @@ def validate_config():
         response['valid'] = False
         response['errors'].append('Please enter your name into the name box.')
 
-    if user_settings['lang'].lower() not in GREETINGS:
+    if user_settings['lang'].lower() not in app.config['GREETINGS']:
         # Given that the select field is populated from a list of languages
         # we defined this should never happen. Just in case.
         response['valid'] = False
