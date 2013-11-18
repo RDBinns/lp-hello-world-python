@@ -38,6 +38,51 @@ def static_from_root():
     return send_from_directory(app.static_folder, request.path[1:])
 
 
+# == POST parameters:
+# :config
+#   params[:config] contains a JSON array of responses to the options defined
+#   by the fields object in meta.json. In this case, something like:
+#   params[:config] = ["name":"SomeName", "lang":"SomeLanguage"]
+#
+# == Returns:
+# A JSON response object.
+# If the parameters passed in are valid: {"valid":true}
+# If the parameters passed in are not valid: {"valid":false,"errors":["No name was provided"], ["The language you chose does not exist"]}
+#
+@app.route('/validate_config/', methods=['POST'])
+def validate_config():
+    if 'config' not in request.form:
+        return Response(response='There is no config to validate', status=400)
+    
+    # Preparing what will be returned:
+    response = {
+        'errors': [],
+        'valid': True,
+    }
+
+    # Extract the config from the POST data and parse its JSON contents.
+    # user_settings will be something like: {"name":"Alice", "lang":"english"}.
+    user_settings = json.loads(request.form.get('config', {}))
+
+    # If the user did not choose a language:
+    if 'lang' not in user_settings or user_settings['lang'] == '':
+        response['valid'] = False
+        response['errors'].append('Please choose a language from the menu.')
+
+    # If the user did not fill in the name option:
+    if 'name' not in user_settings or user_settings['name'] == '':
+        response['valid'] = False
+        response['errors'].append('Please enter your name into the name box.')
+
+    if user_settings['lang'].lower() not in app.config['GREETINGS']:
+        # Given that the select field is populated from a list of languages
+        # we defined this should never happen. Just in case.
+        response['valid'] = False
+        response['errors'].append("We couldn't find the language you selected (%s). Please choose another." % user_settings['lang'])
+
+    return jsonify(**response)
+
+
 # Called to generate the sample shown on BERG Cloud Remote.
 #
 # == Parameters:
@@ -95,7 +140,7 @@ def edition():
         return Response(response='Error: No name provided', status=400)
 
     try:
-        # local_delivery_time is like '2013-10-16T23:20:30-08:00'.
+        # local_delivery_time is like '2013-11-18T23:20:30-08:00'.
         date = dateutil.parser.parse(request.args['local_delivery_time'])
     except:
         return Response(
@@ -107,6 +152,7 @@ def edition():
     if date.weekday() != 0:
         return Response(response=None, status=204)
 
+    # Pick a time of day appropriate greeting.
     i = 1
     if date.hour >= 0 and date.hour <= 3:
         i = 2
@@ -132,51 +178,6 @@ def edition():
             ).hexdigest()
         )
     return response
-
-
-# == POST parameters:
-# :config
-#   params[:config] contains a JSON array of responses to the options defined
-#   by the fields object in meta.json. In this case, something like:
-#   params[:config] = ["name":"SomeName", "lang":"SomeLanguage"]
-#
-# == Returns:
-# A JSON response object.
-# If the parameters passed in are valid: {"valid":true}
-# If the parameters passed in are not valid: {"valid":false,"errors":["No name was provided"], ["The language you chose does not exist"]}
-#
-@app.route('/validate_config/', methods=['POST'])
-def validate_config():
-    if 'config' not in request.form:
-        return Response(response='There is no config to validate', status=400)
-    
-    # Preparing what will be returned:
-    response = {
-        'errors': [],
-        'valid': True,
-    }
-
-    # Extract the config from the POST data and parse its JSON contents.
-    # user_settings will be something like: {"name":"Alice", "lang":"english"}.
-    user_settings = json.loads(request.form.get('config', {}))
-
-    # If the user did not choose a language:
-    if 'lang' not in user_settings or user_settings['lang'] == '':
-        response['valid'] = False
-        response['errors'].append('Please choose a language from the menu.')
-
-    # If the user did not fill in the name option:
-    if 'name' not in user_settings or user_settings['name'] == '':
-        response['valid'] = False
-        response['errors'].append('Please enter your name into the name box.')
-
-    if user_settings['lang'].lower() not in app.config['GREETINGS']:
-        # Given that the select field is populated from a list of languages
-        # we defined this should never happen. Just in case.
-        response['valid'] = False
-        response['errors'].append("We couldn't find the language you selected (%s). Please choose another." % user_settings['lang'])
-
-    return jsonify(**response)
 
 
 if __name__ == '__main__':
